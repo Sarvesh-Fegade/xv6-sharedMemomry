@@ -89,3 +89,23 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int
+sys_shmget(void) {
+  return 0;
+}
+
+int
+sys_shmat(void) {
+  return 0;
+}
+
+int
+sys_shmdt(void) {
+  return 0;
+}
+
+int
+sys_shmctl(void) {
+  return 0;
+}
