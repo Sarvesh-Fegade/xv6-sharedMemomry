@@ -92,7 +92,14 @@ sys_uptime(void)
 
 int
 sys_shmget(void) {
-  return 0;
+
+  int key, size;
+  int shmflag;
+
+  if(argint(0, &key) < 0 || argint(1, &size) < 0 || argint(2, &shmflag) < 0)
+    return -1;
+
+  return shmget((unsigned int)key, (unsigned int)size, shmflag);
 }
 
 int
