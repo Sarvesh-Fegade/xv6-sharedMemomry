@@ -1,5 +1,6 @@
-#define MAX_PAGES   32
-#define MAX_REGION  128
+#define MAX_PAGES   16   // maz pages per shm region
+#define MAX_REGIONS  3840  // total regions ,max 
+#define MAX_REGIONS_PER_PROC 8
 
 #define SHM_R		0400	/* or S_IRUGO from <linux/stat.h> */
 #define SHM_W		0200	/* or S_IWUGO from <linux/stat.h> */
@@ -15,6 +16,13 @@
 #define IPC_NOWAIT 00004000   /* return error on wait */
 #define IPC_PRIVATE 0
 
+struct	shminfo {
+	int shmmax;
+	int shmmin;
+	int shmmni;
+	int shmseg;
+	int shmall;
+};
 
 struct ipc_perm {
     unsigned int __key;
@@ -23,6 +31,7 @@ struct ipc_perm {
 
 struct shmid_ds {
     struct ipc_perm shm_perm;
+    struct shminfo shminfo;
     // unsigned int __key;
     // unsigned int mode;
     int shmid;
@@ -31,6 +40,6 @@ struct shmid_ds {
     int shm_lpid;
     int shm_nattch;
     int no_of_pages;
-    void* v2p[MAX_PAGES];    
+    void* v2p[MAX_PAGES];
 };
 
