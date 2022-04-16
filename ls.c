@@ -2,6 +2,7 @@
 #include "stat.h"
 #include "user.h"
 #include "fs.h"
+#include "sys/shm.h"
 
 char*
 fmtname(char *path)
@@ -29,6 +30,7 @@ ls(char *path)
   int fd;
   struct dirent de;
   struct stat st;
+  shmget(123, 1024, IPC_CREAT | IPC_EXCL | 0600);
 
   if((fd = open(path, 0)) < 0){
     printf(2, "ls: cannot open %s\n", path);
