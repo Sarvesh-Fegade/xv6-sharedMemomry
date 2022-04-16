@@ -7,16 +7,10 @@
 #include "proc.h"
 #include "elf.h"
 #include "sys/shm.h"
-#include "sys/ipc.h"
 #include "spinlock.h"
 
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
-
-struct {
-  struct spinlock lock;
-  struct shmid_ds shmid_ds[MAX_REGION];
-}GLOBAL_BOOK;
 
 // Set up CPU's kernel segment descriptors.
 // Run once on entry on each CPU.
@@ -392,47 +386,6 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
   }
   return 0;
 }
-
-void
-initsharedmemory(void) {
-  initlock(&GLOBAL_BOOK.lock, "SHM");
-  acquire(&GLOBAL_BOOK.lock);
-
-  for (int i = 0; i < MAX_REGION; i++) {
-    GLOBAL_BOOK.shmid_ds[i].shm_nattch = 0;
-    GLOBAL_BOOK.shmid_ds[i].shm_cpid = -1;
-    GLOBAL_BOOK.shmid_ds[i].shm_lpid = -1;
-    GLOBAL_BOOK.shmid_ds[i].__key = -1;
-    GLOBAL_BOOK.shmid_ds[i].shm_segsz = -1;
-    GLOBAL_BOOK.shmid_ds[i].mode = 0;
-    GLOBAL_BOOK.shmid_ds[i].no_of_pages = 0;
-    GLOBAL_BOOK.shmid_ds[i].shmid = i;
-    for(int j = 0; j < MAX_PAGES; j++) {
-      GLOBAL_BOOK.shmid_ds[i].v2p[j] = (void*)0;
-    }
-  }
-  release(&GLOBAL_BOOK.lock);
-}
-
-int
-shmget(unsigned int key, unsigned int size, int shmflag) {
-
-  return 0;
-
-
-
-
-
-
-}
-
-
-
-
-
-
-
-
 
 //PAGEBREAK!
 // Blank page.
