@@ -138,26 +138,22 @@ shmget(unsigned int key, unsigned int size, int shmflag) {
     cprintf("xxx %d ==== %d \n", lookup, GLOBAL_BOOK.shmid_ds[lookup].shm_perm.__key);
     release(&GLOBAL_BOOK.lock);
     return lookup;
-
-
   }
+  return -1;
+}
 
-
-
-
-
+char*
+shmat(int shmid, const void *shmaddr, int shmflg) {
 
   
 
-  return 0;
 
 
 
 
 
-
+  return (char*)-1;
 }
-
 
 
 

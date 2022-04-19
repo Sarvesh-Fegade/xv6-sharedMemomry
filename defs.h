@@ -188,7 +188,7 @@ void            clearpteu(pde_t *pgdir, char *uva);
 
 // shm.c
 int             shmget(unsigned int, unsigned int, int);
-void*           shmat(int shmid, const void *shmaddr, int shmflg);
+char*           shmat(int shmid, const void *shmaddr, int shmflg);
 int             shmdt(const void *shmaddr);
 void            initshminfo(void);
 void            initsharedmemory(void);

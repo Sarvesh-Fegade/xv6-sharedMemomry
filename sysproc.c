@@ -94,17 +94,24 @@ int
 sys_shmget(void) {
 
   int key, size;
-  int shmflag;
+  int shmflg;
 
-  if(argint(0, &key) < 0 || argint(1, &size) < 0 || argint(2, &shmflag) < 0)
+  if(argint(0, &key) < 0 || argint(1, &size) < 0 || argint(2, &shmflg) < 0)
     return -1;
 
-  return shmget((unsigned int)key, (unsigned int)size, shmflag);
+  return shmget((unsigned int)key, (unsigned int)size, shmflg);
 }
 
-int
+char*
 sys_shmat(void) {
-  return 0;
+
+  int shmid, shmflg, size;
+  const void *shmaddr;
+
+  if(argint(0, &shmid) < 0 || argptr(1, &shmaddr, size) < 0 || argint(2, &shmflg) < 0)
+    return -1;
+
+  return shmat(shmid, shmaddr, shmflg);
 }
 
 int
