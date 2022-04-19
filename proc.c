@@ -5,6 +5,7 @@
 #include "mmu.h"
 #include "x86.h"
 #include "proc.h"
+#include "sys/shm.h"
 #include "spinlock.h"
 
 struct {
@@ -138,6 +139,16 @@ userinit(void)
   p->tf->eflags = FL_IF;
   p->tf->esp = PGSIZE;
   p->tf->eip = 0;  // beginning of initcode.S
+
+  p->sharedmem.noofshmreg = 0;
+  p->sharedmem.virtoattch = (void*)0;
+  for(int i = 0; i < MAX_REGIONS_PER_PROC; i++) {
+    p->sharedmem.sharedseg[i].key = -1;
+    p->sharedmem.sharedseg[i].noofpages = 0;
+    p->sharedmem.sharedseg[i].perm = -1;
+    p->sharedmem.sharedseg[i].shmid = -1;
+    p->sharedmem.sharedseg[i].viraddr = (void*)0;
+  }
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");

@@ -80,7 +80,6 @@ pagealloc(int shmid, int noofpages) {
     GLOBAL_BOOK.shmid_ds[shmid].v2p[i] = (void*)page;
   }
   return 1;
-
 }
 
 int
@@ -132,6 +131,7 @@ shmget(unsigned int key, unsigned int size, int shmflag) {
     GLOBAL_BOOK.shmid_ds[lookup].shm_cpid = proc->pid;
     GLOBAL_BOOK.shmid_ds[lookup].shm_segsz = size;
     GLOBAL_BOOK.shmid_ds[lookup].shm_perm.__key = key;
+    GLOBAL_BOOK.shmid_ds[lookup].shm_perm.mode = perm;
 
     //GLOBAL_BOOK.shmid_ds[lookup].shm_perm      #################
     // cprintf("xxx %d\n", lookup + 1);
@@ -145,22 +145,46 @@ shmget(unsigned int key, unsigned int size, int shmflag) {
 char*
 shmat(int shmid, const void *shmaddr, int shmflg) {
 
-    acquire(&GLOBAL_BOOK.lock);
+  int perm;
 
-    struct proc *curproc = myproc();
+  acquire(&GLOBAL_BOOK.lock);
+  struct proc *curproc = myproc();
 
+  for(int i = 0; i < MAX_REGIONS_PER_PROC; i++) {
+    if (curproc->sharedmem.sharedseg[i].shmid == shmid) {
+      release(&GLOBAL_BOOK.lock);
+      if(shmflg == SHM_RDONLY || shmflg == 0)
+        return (char*)curproc->sharedmem.sharedseg[i].viraddr;
+      else
+        return (char*)-1;
+    }
+  }
+  if(shmid < 0 || shmid > MAX_REGIONS) {
+    release(&GLOBAL_BOOK.lock);
+    return (char*) -1;
+  }
 
-
+  if(shmflg == 0) {
+    if (GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode == SHM_RW)
+      perm = PTE_W | PTE_U;
+    else {
+      release(&GLOBAL_BOOK.lock);
+      return -1;
+    }
+  } else if (shmflg == SHM_RDONLY) {
+    if (GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode == SHM_R)
+      perm = PTE_U;
+    else {
+      release(&GLOBAL_BOOK.lock);
+      return -1;
+    }
+  }
+  
 
 
 
 
   return (char*)-1;
 }
-
-
-
-
-
 
 
