@@ -190,6 +190,7 @@ void            clearpteu(pde_t *pgdir, char *uva);
 int             shmget(unsigned int, unsigned int, int);
 void*           shmat(int shmid, const void *shmaddr, int shmflg);
 int             shmdt(const void *shmaddr);
+void            initshminfo(void);
 void            initsharedmemory(void);
 int             keylookup(unsigned int key, int flag, int perm);
 int             pagealloc(int shmid, int noofpages);

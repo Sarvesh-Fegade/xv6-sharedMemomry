@@ -17,11 +17,11 @@
 #define IPC_PRIVATE 0
 
 struct	shminfo {
-	int shmmax;
-	int shmmin;
-	int shmmni;
-	int shmseg;
-	int shmall;
+	int shmmax;     /* Maximum segment size */
+	int shmmin;     /* Minimum segment size; always 1 */
+	int shmmni;     /* Maximum number of segments */   
+	int shmseg;     /* Maximum number of segments that a process can attach; unused within kernel */
+	int shmall;     /* Maximum number of pages of shared memory, system-wide */
 };
 
 struct ipc_perm {
@@ -31,7 +31,7 @@ struct ipc_perm {
 
 struct shmid_ds {
     struct ipc_perm shm_perm;
-    struct shminfo shminfo;
+    //struct shminfo shminfo;
     // unsigned int __key;
     // unsigned int mode;
     int shmid;

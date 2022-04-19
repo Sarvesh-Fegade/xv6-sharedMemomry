@@ -14,20 +14,28 @@ struct {
   struct shmid_ds shmid_ds[MAX_REGIONS];
 }GLOBAL_BOOK;
 
+struct shminfo shminfo;
+
+void
+initshminfo() {
+
+  shminfo.shmmax = MAX_PAGES * PGSIZE;
+  shminfo.shmmin = 1;
+  shminfo.shmmni = MAX_REGIONS;
+  shminfo.shmseg = MAX_REGIONS_PER_PROC;
+  shminfo.shmall = 64000;
+}
+
 void
 initsharedmemory(void) {
 
   initlock(&GLOBAL_BOOK.lock, "SHM");
   acquire(&GLOBAL_BOOK.lock);
 
+  initshminfo();
   for (int i = 0; i < MAX_REGIONS; i++) {
     GLOBAL_BOOK.shmid_ds[i].shm_perm.__key = -1;
     GLOBAL_BOOK.shmid_ds[i].shm_perm.mode = 0;
-    GLOBAL_BOOK.shmid_ds[i].shminfo.shmmax = MAX_PAGES*PGSIZE;
-    GLOBAL_BOOK.shmid_ds[i].shminfo.shmmin = 1;
-    GLOBAL_BOOK.shmid_ds[i].shminfo.shmmni = MAX_REGIONS;
-    GLOBAL_BOOK.shmid_ds[i].shminfo.shmseg = MAX_REGIONS_PER_PROC;
-    GLOBAL_BOOK.shmid_ds[i].shminfo.shmall = 64000;
     GLOBAL_BOOK.shmid_ds[i].shmid = i;
     GLOBAL_BOOK.shmid_ds[i].shm_segsz = -1;
     GLOBAL_BOOK.shmid_ds[i].shm_cpid = -1;
@@ -123,9 +131,11 @@ shmget(unsigned int key, unsigned int size, int shmflag) {
     GLOBAL_BOOK.shmid_ds[lookup].no_of_pages = noofpages;
     GLOBAL_BOOK.shmid_ds[lookup].shm_cpid = proc->pid;
     GLOBAL_BOOK.shmid_ds[lookup].shm_segsz = size;
+    GLOBAL_BOOK.shmid_ds[lookup].shm_perm.__key = key;
+
     //GLOBAL_BOOK.shmid_ds[lookup].shm_perm      #################
     // cprintf("xxx %d\n", lookup + 1);
-    //cprintf("xxx %d ==== %d \n", lookup, GLOBAL_BOOK.shmid_ds[lookup].shmid);
+    cprintf("xxx %d ==== %d \n", lookup, GLOBAL_BOOK.shmid_ds[lookup].shm_perm.__key);
     release(&GLOBAL_BOOK.lock);
     return lookup;
 
