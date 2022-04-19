@@ -6,6 +6,7 @@
 #include "defs.h"
 #include "x86.h"
 #include "elf.h"
+#include "sys/shm.h"
 
 int
 exec(char *path, char **argv)
@@ -99,6 +100,17 @@ exec(char *path, char **argv)
   curproc->sz = sz;
   curproc->tf->eip = elf.entry;  // main
   curproc->tf->esp = sp;
+
+  curproc->sharedmem.noofshmreg = 0;
+  curproc->sharedmem.virtoattch = (void*)HEAPLIMIT;
+  for(int i = 0; i < MAX_REGIONS_PER_PROC; i++) {
+    curproc->sharedmem.sharedseg[i].key = -1;
+    curproc->sharedmem.sharedseg[i].noofpages = 0;
+    curproc->sharedmem.sharedseg[i].perm = -1;
+    curproc->sharedmem.sharedseg[i].shmid = -1;
+    curproc->sharedmem.sharedseg[i].viraddr = (void*)0;
+  }
+
   switchuvm(curproc);
   freevm(oldpgdir);
   return 0;

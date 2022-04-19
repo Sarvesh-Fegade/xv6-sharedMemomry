@@ -34,6 +34,19 @@ struct context {
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
+struct sharedseg {
+  int shmid, key, perm, noofpages;
+  void *viraddr;
+};
+
+struct sharedmem {
+
+  void* virtoattch;
+  int noofshmreg;
+  struct sharedseg sharedseg[8];
+};
+
+
 // Per-process state
 struct proc {
   uint sz;                     // Size of process memory (bytes)
@@ -49,6 +62,8 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+
+  struct sharedmem sharedmem;
 };
 
 // Process memory is laid out contiguously, low addresses first:

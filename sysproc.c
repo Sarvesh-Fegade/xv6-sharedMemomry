@@ -105,11 +105,11 @@ sys_shmget(void) {
 char*
 sys_shmat(void) {
 
-  int shmid, shmflg, size;
   const void *shmaddr;
+  int shmid, shmflg, size = sizeof(*shmaddr);
 
-  if(argint(0, &shmid) < 0 || argptr(1, &shmaddr, size) < 0 || argint(2, &shmflg) < 0)
-    return -1;
+  if(argint(0, &shmid) < 0 || argptr(1, (char**)&shmaddr, size) < 0 || argint(2, &shmflg) < 0)
+    return (char*)-1;
 
   return shmat(shmid, shmaddr, shmflg);
 }

@@ -174,6 +174,20 @@ growproc(int n)
   return 0;
 }
 
+void
+cpyshmpara(struct proc* parent, struct proc* child) {
+
+  child->sharedmem.noofshmreg = parent->sharedmem.noofshmreg;
+  child->sharedmem.virtoattch = parent->sharedmem.virtoattch;
+  for(int i = 0; i < parent->sharedmem.noofshmreg; i++) {
+    child->sharedmem.sharedseg[i].key = parent->sharedmem.sharedseg[i].key;
+    child->sharedmem.sharedseg[i].noofpages = parent->sharedmem.sharedseg[i].noofpages;
+    child->sharedmem.sharedseg[i].perm = parent->sharedmem.sharedseg[i].perm;
+    child->sharedmem.sharedseg[i].shmid = parent->sharedmem.sharedseg[i].shmid;
+    child->sharedmem.sharedseg[i].viraddr = parent->sharedmem.sharedseg[i].viraddr;
+  }
+}
+
 // Create a new process copying p as the parent.
 // Sets up stack to return as if from system call.
 // Caller must set state of returned proc to RUNNABLE.
@@ -209,6 +223,7 @@ fork(void)
   np->cwd = idup(curproc->cwd);
 
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
+  cpyshmpara(curproc, np);
 
   pid = np->pid;
 
