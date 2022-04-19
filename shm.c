@@ -91,6 +91,8 @@ shmget(unsigned int key, unsigned int size, int shmflag) {
   struct proc *proc = myproc();
   flag = shmflag & 00007000;
   perm = shmflag & 00000700;
+  if(perm == 0)
+    perm = SHM_RW;
   noofpages = size / PGSIZE;
   noofpages += 1;
   if(size <= 0 || size > KERNBASE - HEAPLIMIT || noofpages > MAX_PAGES) {
@@ -101,12 +103,12 @@ shmget(unsigned int key, unsigned int size, int shmflag) {
   if(lookup == -1) {
     release(&GLOBAL_BOOK.lock);
     return -1;
-  } else if (lookup >= 0) {
+  }else if (lookup >= 0) {
     release(&GLOBAL_BOOK.lock);
     if(GLOBAL_BOOK.shmid_ds[lookup].shm_segsz < size || GLOBAL_BOOK.shmid_ds[lookup].no_of_pages != noofpages)
       return -1;
     return GLOBAL_BOOK.shmid_ds[lookup].shmid;
-  } else {
+  }else {
     lookup = -1;
     for(int i = 0; i < MAX_REGIONS; i++) {
       if(GLOBAL_BOOK.shmid_ds[i].shm_perm.__key == -1) {
@@ -135,17 +137,17 @@ shmget(unsigned int key, unsigned int size, int shmflag) {
 
     //GLOBAL_BOOK.shmid_ds[lookup].shm_perm      #################
     // cprintf("xxx %d\n", lookup + 1);
-    cprintf("xxx %d ==== %d \n", lookup, GLOBAL_BOOK.shmid_ds[lookup].shm_perm.__key);
+    cprintf("xxxxx %d ==== %d \n", lookup, GLOBAL_BOOK.shmid_ds[lookup].shm_perm.__key);
     release(&GLOBAL_BOOK.lock);
     return lookup;
   }
   return -1;
-}
+} 
 
-char*
+void*
 shmat(int shmid, const void *shmaddr, int shmflg) {
 
-  int perm;
+  int perm = 0;
 
   acquire(&GLOBAL_BOOK.lock);
   struct proc *curproc = myproc();
@@ -156,12 +158,12 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
       if(shmflg == SHM_RDONLY || shmflg == 0)
         return (char*)curproc->sharedmem.sharedseg[i].viraddr;
       else
-        return (char*)-1;
+        return (void*)-1;
     }
   }
   if(shmid < 0 || shmid > MAX_REGIONS) {
     release(&GLOBAL_BOOK.lock);
-    return (char*) -1;
+    return (void*) -1;
   }
 
   if(shmflg == 0) {
@@ -169,22 +171,20 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
       perm = PTE_W | PTE_U;
     else {
       release(&GLOBAL_BOOK.lock);
-      return -1;
+      return (void*)-1;
     }
-  } else if (shmflg == SHM_RDONLY) {
+  }else if (shmflg == SHM_RDONLY) {
+
     if (GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode == SHM_R)
       perm = PTE_U;
     else {
       release(&GLOBAL_BOOK.lock);
-      return -1;
+      return (void*)-1;
     }
   }
-  
 
 
-
-
-  return (char*)-1;
+  return (void*)-1;
 }
 
 
