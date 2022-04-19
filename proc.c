@@ -180,11 +180,13 @@ cpyshmpara(struct proc* parent, struct proc* child) {
   child->sharedmem.noofshmreg = parent->sharedmem.noofshmreg;
   child->sharedmem.virtoattch = parent->sharedmem.virtoattch;
   for(int i = 0; i < parent->sharedmem.noofshmreg; i++) {
-    child->sharedmem.sharedseg[i].key = parent->sharedmem.sharedseg[i].key;
-    child->sharedmem.sharedseg[i].noofpages = parent->sharedmem.sharedseg[i].noofpages;
-    child->sharedmem.sharedseg[i].perm = parent->sharedmem.sharedseg[i].perm;
-    child->sharedmem.sharedseg[i].shmid = parent->sharedmem.sharedseg[i].shmid;
-    child->sharedmem.sharedseg[i].viraddr = parent->sharedmem.sharedseg[i].viraddr;
+    if(parent->sharedmem.sharedseg[i].key != 0) {
+      child->sharedmem.sharedseg[i].key = parent->sharedmem.sharedseg[i].key;
+      child->sharedmem.sharedseg[i].noofpages = parent->sharedmem.sharedseg[i].noofpages;
+      child->sharedmem.sharedseg[i].perm = parent->sharedmem.sharedseg[i].perm;
+      child->sharedmem.sharedseg[i].shmid = parent->sharedmem.sharedseg[i].shmid;
+      child->sharedmem.sharedseg[i].viraddr = parent->sharedmem.sharedseg[i].viraddr;
+    }
   }
 }
 
