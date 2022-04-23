@@ -137,7 +137,7 @@ shmget(unsigned int key, unsigned int size, int shmflag) {
 
     //GLOBAL_BOOK.shmid_ds[lookup].shm_perm      #################
     // cprintf("xxx %d\n", lookup + 1);
-    cprintf("xxxxx %d ==== %d \n", lookup, GLOBAL_BOOK.shmid_ds[lookup].shm_perm.__key);
+    //cprintf("xxxxx %d ==== %d \n", lookup, GLOBAL_BOOK.shmid_ds[lookup].shm_perm.__key);
     release(&GLOBAL_BOOK.lock);
     return lookup;
   }
@@ -147,7 +147,10 @@ shmget(unsigned int key, unsigned int size, int shmflag) {
 void*
 shmat(int shmid, const void *shmaddr, int shmflg) {
 
-  int perm = 0;
+  int perm = 0, lookup = 0, noofpages = GLOBAL_BOOK.shmid_ds[shmid].no_of_pages;
+  void* vir; 
+
+  cprintf("error in 153 \n");
 
   acquire(&GLOBAL_BOOK.lock);
   struct proc *curproc = myproc();
@@ -155,22 +158,27 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
   for(int i = 0; i < MAX_REGIONS_PER_PROC; i++) {
     if (curproc->sharedmem.sharedseg[i].shmid == shmid) {
       release(&GLOBAL_BOOK.lock);
-      if(shmflg == SHM_RDONLY || shmflg == 0)
-        return (char*)curproc->sharedmem.sharedseg[i].viraddr;
-      else
-        return (void*)-1;
+      if(shmflg == SHM_RDONLY)
+        if(GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode == SHM_R)
+          return (char*)curproc->sharedmem.sharedseg[i].viraddr;
+      if (shmflg == 0)
+        if(GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode == SHM_RW)
+          return (char*)curproc->sharedmem.sharedseg[i].viraddr;
+      cprintf("error in 165 \n");
+      return (void*)-1;
     }
   }
   if(shmid < 0 || shmid > MAX_REGIONS) {
     release(&GLOBAL_BOOK.lock);
-    return (void*) -1;
+    cprintf("error in 171 \n");
+    return (void*)-1;
   }
-
   if(shmflg == 0) {
     if (GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode == SHM_RW)
       perm = PTE_W | PTE_U;
     else {
       release(&GLOBAL_BOOK.lock);
+      cprintf("error in 177 \n");
       return (void*)-1;
     }
   }else if (shmflg == SHM_RDONLY) {
@@ -179,12 +187,55 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
       perm = PTE_U;
     else {
       release(&GLOBAL_BOOK.lock);
+      cprintf("error in 186 \n");
       return (void*)-1;
     }
   }
+  if(shmaddr == (void*)0)
+    vir = curproc->sharedmem.next_virtual;
+  else
+    vir = (void*)shmaddr;
 
+  // for(int i = 0; i < 8; i++) {
+  //   if(curproc->sharedmem.sharedseg[i].key != -1) {
+  //     if((int)vir + noofpages * PGSIZE  > (int)curproc->sharedmem.sharedseg[i].viraddr) {
+  //       release(&GLOBAL_BOOK.lock);
+  //       cprintf("errorn in line 197");
+  //       return (void*) -1;
+  //     }
+  //   }
+  // }
+  for(int i = 0; i < 8; i++) {
+    if(curproc->sharedmem.sharedseg[i].key == -1) {
+      lookup = i;
+      break;
+    }
+  }
+  curproc->sharedmem.noofshmreg++;
+  curproc->sharedmem.sharedseg[lookup].shmid = shmid;
+  curproc->sharedmem.sharedseg[lookup].noofpages = noofpages;
+  curproc->sharedmem.sharedseg[lookup].viraddr = vir;
+  curproc->sharedmem.sharedseg[lookup].key = GLOBAL_BOOK.shmid_ds[shmid].shm_perm.__key;
+  curproc->sharedmem.sharedseg[lookup].perm = GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode;
 
-  return (void*)-1;
+  for(int i = 0; i < noofpages; i++) {
+    cprintf("%d\n", i);
+
+    if (mappages(curproc->pgdir, vir, PGSIZE, (uint)GLOBAL_BOOK.shmid_ds[shmid].v2p[i], perm) < 0) {
+      cprintf("mappages failed !");
+      deallocuvm(curproc->pgdir, (uint)vir, (uint) vir + GLOBAL_BOOK.shmid_ds[shmid].shm_segsz);
+      release(&GLOBAL_BOOK.lock);
+      cprintf("error in 219 \n");
+      return (void*)-1;
+    }
+    vir = vir + PGSIZE;
+  }
+  curproc->sharedmem.next_virtual = vir;
+  //cprintf("vir to attchh = %x\n", vir);
+  release(&GLOBAL_BOOK.lock);
+  cprintf("error in 230 \n");
+
+  return curproc->sharedmem.sharedseg[lookup].viraddr;
 }
 
 

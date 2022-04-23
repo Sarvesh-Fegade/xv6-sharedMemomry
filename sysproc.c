@@ -102,16 +102,35 @@ sys_shmget(void) {
   return shmget((unsigned int)key, (unsigned int)size, shmflg);
 }
 
-char*
+void*
 sys_shmat(void) {
 
-  const void *shmaddr;
-  int shmid, shmflg, size = sizeof(*shmaddr);
+  //const void *shmaddr;
+  int shmaddr2;
+  //int shmid, shmflg, size = sizeof(*shmaddr);
+  int shmid, shmflg;
 
-  if(argint(0, &shmid) < 0 || argptr(1, (char**)&shmaddr, size) < 0 || argint(2, &shmflg) < 0)
-    return (char*)-1;
+  // if(argint(0, &shmid) < 0 || argptr(1, (char**)&shmaddr, size) < 0 || argint(2, &shmflg) < 0) {
 
-  return shmat(shmid, shmaddr, shmflg);
+  //   cprintf("Error in sys_shmat");
+
+  //   return (void*)-1;
+
+
+  // }
+
+  if(argint(0, &shmid) < 0 || argint(1,&shmaddr2) < 0 || argint(2, &shmflg) < 0) {
+
+    cprintf("Error in sys_shmat");
+
+    return (void*)-1;
+
+
+  }
+    
+
+  //return shmat(shmid, shmaddr, shmflg);
+  return shmat(shmid, (const void*)shmaddr2, shmflg);
 }
 
 int

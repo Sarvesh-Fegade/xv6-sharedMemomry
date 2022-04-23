@@ -41,7 +41,7 @@ struct sharedseg {
 
 struct sharedmem {
 
-  void* virtoattch;
+  void* next_virtual;
   int noofshmreg;
   struct sharedseg sharedseg[8];
 };

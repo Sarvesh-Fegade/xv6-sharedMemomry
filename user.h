@@ -26,7 +26,8 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int shmget(key__t key, size__t size, int shmflg);
-char *shmat(int shmid, const void *shmaddr, int shmflg);
+//void *shmat(int shmid, const void *shmaddr, int shmflg);
+void *shmat(int shmid, int shmaddr, int shmflg);
 int shmdt(const void *shmaddr);
 //int shmctl(int shmid, );
 

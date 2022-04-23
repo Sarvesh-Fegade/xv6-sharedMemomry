@@ -102,7 +102,7 @@ exec(char *path, char **argv)
   curproc->tf->esp = sp;
 
   curproc->sharedmem.noofshmreg = 0;
-  curproc->sharedmem.virtoattch = (void*)HEAPLIMIT;
+  curproc->sharedmem.next_virtual = (void*)HEAPLIMIT;
   for(int i = 0; i < MAX_REGIONS_PER_PROC; i++) {
     curproc->sharedmem.sharedseg[i].key = -1;
     curproc->sharedmem.sharedseg[i].noofpages = 0;

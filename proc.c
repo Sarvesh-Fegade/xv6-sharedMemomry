@@ -141,7 +141,7 @@ userinit(void)
   p->tf->eip = 0;  // beginning of initcode.S
 
   p->sharedmem.noofshmreg = 0;
-  p->sharedmem.virtoattch = (void*)0;
+  p->sharedmem.next_virtual = (void*)HEAPLIMIT;
   for(int i = 0; i < MAX_REGIONS_PER_PROC; i++) {
     p->sharedmem.sharedseg[i].key = -1;
     p->sharedmem.sharedseg[i].noofpages = 0;
@@ -185,11 +185,13 @@ growproc(int n)
   return 0;
 }
 
+/* add j for skipping private shmsegs initialization problem, can be solved in allocproc !!!! */
+
 void
 cpyshmpara(struct proc* parent, struct proc* child) {
 
   child->sharedmem.noofshmreg = parent->sharedmem.noofshmreg;
-  child->sharedmem.virtoattch = parent->sharedmem.virtoattch;
+  child->sharedmem.next_virtual = parent->sharedmem.next_virtual;
   for(int i = 0; i < parent->sharedmem.noofshmreg; i++) {
     if(parent->sharedmem.sharedseg[i].key != 0) {
       child->sharedmem.sharedseg[i].key = parent->sharedmem.sharedseg[i].key;
