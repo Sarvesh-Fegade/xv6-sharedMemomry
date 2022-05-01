@@ -150,7 +150,14 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
   int perm = 0, lookup = 0, noofpages = GLOBAL_BOOK.shmid_ds[shmid].no_of_pages;
   void* vir; 
 
-  cprintf("error in 153 \n");
+  cprintf("running well in 153 \n");
+
+
+  if(shmid < 0 || shmid > MAX_REGIONS) {
+    release(&GLOBAL_BOOK.lock);
+    cprintf("error in 158 \n");
+    return (void*)-1;
+  }
 
   acquire(&GLOBAL_BOOK.lock);
   struct proc *curproc = myproc();
@@ -168,11 +175,7 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
       return (void*)-1;
     }
   }
-  if(shmid < 0 || shmid > MAX_REGIONS) {
-    release(&GLOBAL_BOOK.lock);
-    cprintf("error in 171 \n");
-    return (void*)-1;
-  }
+  
   if(shmflg == 0) {
     if (GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode == SHM_RW)
       perm = PTE_W | PTE_U;
@@ -198,7 +201,7 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
 
   // for(int i = 0; i < 8; i++) {
   //   if(curproc->sharedmem.sharedseg[i].key != -1) {
-  //     if((int)vir + noofpages * PGSIZE  > (int)curproc->sharedmem.sharedseg[i].viraddr) {
+  //     if((int)vir + noofpages * PGSIZE  > (int)curproc->sharedmem.sharedseg[i].viraddr) {           use flg to identify it is default or udr given addre
   //       release(&GLOBAL_BOOK.lock);
   //       cprintf("errorn in line 197");
   //       return (void*) -1;
@@ -238,4 +241,52 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
   return curproc->sharedmem.sharedseg[lookup].viraddr;
 }
 
+int
+shmdt(const void *shmaddr) {
 
+  struct proc *curproc = myproc();
+  int shmid = -1, lookup = -1;
+  void *vir, *vir2;
+  pte_t *pte;  
+
+  if(curproc->sharedmem.noofshmreg <= 0) {
+    return -1;
+  }
+  for(int i = 0; i < MAX_REGIONS_PER_PROC; i++) {
+    if((shmaddr == curproc->sharedmem.sharedseg[i].viraddr) && (curproc->sharedmem.sharedseg[i].key != -1)) {
+      shmid = curproc->sharedmem.sharedseg[i].shmid;
+      lookup = i;
+      break;
+    }
+  }
+  if(shmid == -1) {
+    return -1;
+  }
+  vir = curproc->sharedmem.sharedseg[lookup].viraddr;
+  vir2 = vir;
+  acquire(&GLOBAL_BOOK.lock);
+  GLOBAL_BOOK.shmid_ds[shmid].shm_nattch--;
+
+  for (int i = 0; i < GLOBAL_BOOK.shmid_ds[shmid].no_of_pages; i++) {
+
+    if((pte = walkpgdir(curproc->pgdir, vir2, 0)) == 0)
+      return -1;
+    *pte = 0;
+    vir2 = vir2 + PGSIZE;
+  }
+  curproc->sharedmem.noofshmreg--;
+  curproc->sharedmem.sharedseg[lookup].key = -1;
+  curproc->sharedmem.sharedseg[lookup].noofpages = 0;
+  curproc->sharedmem.sharedseg[lookup].perm = -1;
+  curproc->sharedmem.sharedseg[lookup].shmid = -1;
+  curproc->sharedmem.sharedseg[lookup].viraddr = (void*)0;
+
+
+
+
+
+
+
+
+  return -2;
+}

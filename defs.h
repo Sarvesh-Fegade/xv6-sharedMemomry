@@ -186,7 +186,8 @@ void            switchuvm(struct proc*);
 void            switchkvm(void);
 int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
-int      mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm);
+int             mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm);
+pte_t*          walkpgdir(pde_t *pgdir, const void *va, int alloc);
 
 // shm.c
 int             shmget(unsigned int, unsigned int, int);

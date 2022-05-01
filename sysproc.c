@@ -127,7 +127,6 @@ sys_shmat(void) {
 
 
   }
-    
 
   //return shmat(shmid, shmaddr, shmflg);
   return shmat(shmid, (const void*)shmaddr2, shmflg);
@@ -135,7 +134,16 @@ sys_shmat(void) {
 
 int
 sys_shmdt(void) {
-  return 0;
+
+  int shmaddr;
+
+  if (argint(0, &shmaddr) < 0) {
+    cprintf("error in fetching argumrnts");
+    return -1;
+  }
+
+
+  return shmdt((const void*)shmaddr);
 }
 
 int
