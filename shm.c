@@ -220,6 +220,7 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
   curproc->sharedmem.sharedseg[lookup].viraddr = vir;
   curproc->sharedmem.sharedseg[lookup].key = GLOBAL_BOOK.shmid_ds[shmid].shm_perm.__key;
   curproc->sharedmem.sharedseg[lookup].perm = GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode;
+  GLOBAL_BOOK.shmid_ds[shmid].shm_lpid = curproc->pid;
 
   for(int i = 0; i < noofpages; i++) {
     cprintf("%d\n", i);
@@ -246,7 +247,7 @@ shmdt(const void *shmaddr) {
 
   struct proc *curproc = myproc();
   int shmid = -1, lookup = -1;
-  void *vir, *vir2;
+  void *vir, *vir2, *phy;
   pte_t *pte;  
 
   if(curproc->sharedmem.noofshmreg <= 0) {
@@ -264,6 +265,9 @@ shmdt(const void *shmaddr) {
   }
   vir = curproc->sharedmem.sharedseg[lookup].viraddr;
   vir2 = vir;
+  if(vir == 0) {
+    return -1;
+  }
   acquire(&GLOBAL_BOOK.lock);
   GLOBAL_BOOK.shmid_ds[shmid].shm_nattch--;
 
@@ -280,13 +284,27 @@ shmdt(const void *shmaddr) {
   curproc->sharedmem.sharedseg[lookup].perm = -1;
   curproc->sharedmem.sharedseg[lookup].shmid = -1;
   curproc->sharedmem.sharedseg[lookup].viraddr = (void*)0;
+  GLOBAL_BOOK.shmid_ds[shmid].shm_lpid = curproc->pid;
 
+  if(GLOBAL_BOOK.shmid_ds[shmid].shm_nattch <= 0) {
 
+    for (int i = 0; i < GLOBAL_BOOK.shmid_ds[shmid].no_of_pages; i++) {
+      phy = GLOBAL_BOOK.shmid_ds[shmid].v2p[i];
+      GLOBAL_BOOK.shmid_ds[shmid].v2p[i] = (void*)0;
+      kfree(P2V(phy));
+    }
 
+    GLOBAL_BOOK.shmid_ds[shmid].no_of_pages = 0;
+    GLOBAL_BOOK.shmid_ds[shmid].shm_cpid = -1;
+    GLOBAL_BOOK.shmid_ds[shmid].shm_lpid = curproc->pid;
+    GLOBAL_BOOK.shmid_ds[shmid].shm_nattch = 0;
+    GLOBAL_BOOK.shmid_ds[shmid].shm_segsz = 0;
+    GLOBAL_BOOK.shmid_ds[shmid].shmid = -1;
+    GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode = -1;
+    GLOBAL_BOOK.shmid_ds[shmid].shm_perm.__key = -1;
+  }
 
+  release(&GLOBAL_BOOK.lock);
+  return 0;
 
-
-
-
-  return -2;
 }
