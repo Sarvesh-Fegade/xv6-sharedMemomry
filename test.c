@@ -5,7 +5,7 @@
 #include "sys/shm.h"
 
 int main() {
-    
+
     int key1 = 3245, id1, dt, cmp;
     void *addr, *addr2;
     char *ptr;
@@ -46,9 +46,9 @@ int main() {
 
     cmp = strcmp(ptr, "abcd");
     if(cmp == 0)
-        printf(1, "Write test --> Passed  %d \n", cmp);
+        printf(1, "Write test --> Passed \n");
     else
-        printf(1, "Write test --> Failed   %d \n", cmp);
+        printf(1, "Write test --> Failed \n");
 
     exit();
 }

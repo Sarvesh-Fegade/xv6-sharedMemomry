@@ -100,7 +100,7 @@ sys_shmget(void) {
   if(argint(0, &key) < 0 || argint(1, &size) < 0 || argint(2, &shmflg) < 0)
     return -1;
 
-  return shmget((unsigned int)key, (unsigned int)size, shmflg);
+  return shmget(key, (unsigned int)size, shmflg);
 }
 
 void*
@@ -113,7 +113,6 @@ sys_shmat(void) {
     return (void*)-1;
 
   return shmat(shmid, (void*)shmaddr, shmflg);
-
 }
 
 int
@@ -125,7 +124,6 @@ sys_shmdt(void) {
     cprintf("error in fetching argumrnts");
     return -1;
   }
-
   return shmdt((const void*)shmaddr);
 }
 
@@ -134,10 +132,8 @@ sys_shmctl(void) {
 
   int shmid, cmd;
   struct shmid_ds *ptr;
-
   if(argint(0, &shmid) < 0 || argint(1, &cmd) < 0 || argptr(2, (void*)&ptr, sizeof(*ptr)) < 0) {
     return -1;
   }
-
   return shmctl(shmid, cmd, ptr);
 }

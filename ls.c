@@ -31,31 +31,6 @@ ls(char *path)
   struct dirent de;
   struct stat st;
 
-  void *a;
-  int id;
-  // id = shmget(123, 5024, IPC_CREAT | IPC_EXCL | 0400);
-  // printf(2, "id is = %d\n", id);
-  // a = shmat(id, 0, SHM_RDONLY);
-  // printf(2, "address is = %x\n", a);
-  // id = shmget(1234, 8192, IPC_CREAT | IPC_EXCL | 0600);
-  // printf(2, "id is = %d\n", id);
-  // //shmget(1256, 1024, IPC_CREAT | IPC_EXCL | 0600);
-  // a = shmat(id, 0, 0);
-  // printf(2, "address is = %x\n", a);
-
-  id = shmget(6448, 1024, IPC_CREAT | IPC_EXCL | 0400);
-  printf(2, "id is = %d\n", id);
-  a = shmat(id, 0, SHM_RDONLY);
-  //a = shmat(id, 0, SHM_RDONLY);
-  printf(2, "address is = %x\n", a);
-
-  id = shmdt((void *)a);
-  printf(2, "id is = %d\n", id);
-  a = shmat(id, 0, SHM_RDONLY);
-  //a = shmat(id, 0, SHM_RDONLY);
-  printf(2, "address is = %x\n", a);
-
-
   if((fd = open(path, 0)) < 0){
     printf(2, "ls: cannot open %s\n", path);
     return;

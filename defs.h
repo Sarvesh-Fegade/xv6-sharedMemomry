@@ -191,7 +191,7 @@ int             mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm);
 pde_t*          walkpgdir(pde_t *pgdir, const void *va, int alloc);
 
 // shm.c
-int             shmget(unsigned int, unsigned int, int);
+int             shmget(int, unsigned int, int);
 void*           shmat(int shmid, const void *shmaddr, int shmflg);
 int             shmdt(const void *shmaddr);
 int             shmctl(int shmid, int cmd, struct shmid_ds *buf);

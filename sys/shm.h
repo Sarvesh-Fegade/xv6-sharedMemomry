@@ -1,5 +1,5 @@
 #define MAX_PAGES   16   // maz pages per shm region
-#define MAX_REGIONS  3840  // total regions ,max 
+#define MAX_REGIONS  3840  // total regions ,max
 #define MAX_REGIONS_PER_PROC 8
 
 #define SHM_R		0400	/* or S_IRUGO from <linux/stat.h> */
@@ -24,7 +24,7 @@
 struct	shminfo {
 	int shmmax;     /* Maximum segment size */
 	int shmmin;     /* Minimum segment size; always 1 */
-	int shmmni;     /* Maximum number of segments */   
+	int shmmni;     /* Maximum number of segments */
 	int shmseg;     /* Maximum number of segments that a process can attach; unused within kernel */
 	int shmall;     /* Maximum number of pages of shared memory, system-wide */
 };

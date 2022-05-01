@@ -32,7 +32,6 @@ initsharedmemory(void) {
   initlock(&GLOBAL_BOOK.lock, "SHM");
   acquire(&GLOBAL_BOOK.lock);
 
-  // initshminfo();
   for (int i = 0; i < MAX_REGIONS; i++) {
     GLOBAL_BOOK.shmid_ds[i].shm_perm.__key = -1;
     GLOBAL_BOOK.shmid_ds[i].shm_perm.mode = 0;
@@ -85,10 +84,13 @@ pagealloc(int shmid, int noofpages) {
 }
 
 int
-shmget(unsigned int key, unsigned int size, int shmflag) {
+shmget(int key, unsigned int size, int shmflag) {
 
   acquire(&GLOBAL_BOOK.lock);
-
+  if(key <= 0) {
+    release(&GLOBAL_BOOK.lock);
+    return -1;
+  }
   int noofpages, flag, perm, lookup, success = 0;
   struct proc *proc = myproc();
   flag = shmflag & 00007000;
@@ -101,6 +103,7 @@ shmget(unsigned int key, unsigned int size, int shmflag) {
     release(&GLOBAL_BOOK.lock);
     return -1;
   }
+
   lookup = keylookup(key, flag, perm);
   if(lookup == -1) {
     release(&GLOBAL_BOOK.lock);
@@ -120,53 +123,43 @@ shmget(unsigned int key, unsigned int size, int shmflag) {
     }
     if(lookup == -1) {
       release(&GLOBAL_BOOK.lock);
-      return -1;   
+      return -1;
     }
     if(!(flag == IPC_CREAT || flag == (IPC_CREAT | IPC_EXCL)))
       return -1;
     if(!(perm == SHM_R || perm == SHM_RW || perm == SHM_W))
       return -1;
-    
     success = pagealloc(lookup, noofpages);
     if(!success)
       return -1;
-    
     GLOBAL_BOOK.shmid_ds[lookup].no_of_pages = noofpages;
     GLOBAL_BOOK.shmid_ds[lookup].shm_cpid = proc->pid;
     GLOBAL_BOOK.shmid_ds[lookup].shm_segsz = size;
     GLOBAL_BOOK.shmid_ds[lookup].shm_perm.__key = key;
     GLOBAL_BOOK.shmid_ds[lookup].shm_perm.mode = perm;
 
-    //GLOBAL_BOOK.shmid_ds[lookup].shm_perm      #################
-    // cprintf("xxx %d\n", lookup + 1);
-    //cprintf("xxxxx %d ==== %d \n", lookup, GLOBAL_BOOK.shmid_ds[lookup].shm_perm.__key);
     release(&GLOBAL_BOOK.lock);
     return lookup;
   }
   return -1;
-} 
+}
 
 void*
 shmat(int shmid, const void *shmaddr, int shmflg) {
 
   int perm = 0, lookup = 0, noofpages = GLOBAL_BOOK.shmid_ds[shmid].no_of_pages;
-  void* vir; 
-
+  void* vir;
   if(shmid < 0 || shmid > MAX_REGIONS) {
     return (void*)-1;
   }
   if(shmaddr != 0) {
     if( (int)shmaddr > (int)KERNBASE || (int)shmaddr < (int)HEAPLIMIT ) {
-      cprintf("error in 162 \n");
-      cprintf("%x\n", shmaddr);
-
       return (void*) -1;
     }
   }
 
   acquire(&GLOBAL_BOOK.lock);
   struct proc *curproc = myproc();
-
   for(int i = 0; i < MAX_REGIONS_PER_PROC; i++) {
     if (curproc->sharedmem.sharedseg[i].shmid == shmid) {
       release(&GLOBAL_BOOK.lock);
@@ -179,7 +172,7 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
       return (void*)-1;
     }
   }
-  
+
   if(shmflg == 0) {
     if (GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode == SHM_RW)
       perm = PTE_W | PTE_U;
@@ -198,18 +191,8 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
   }
   if(shmaddr == (void*)0)
     vir = curproc->sharedmem.next_virtual;
-  else 
+  else
     vir = (void*)shmaddr;
-
-  // for(int i = 0; i < 8; i++) {
-  //   if(curproc->sharedmem.sharedseg[i].key != -1) {
-  //     if((int)vir + noofpages * PGSIZE  > (int)curproc->sharedmem.sharedseg[i].viraddr) {           use flg to identify it is default or udr given addre
-  //       release(&GLOBAL_BOOK.lock);
-  //       cprintf("errorn in line 197");
-  //       return (void*) -1;
-  //     }
-  //   }
-  // }
   for(int i = 0; i < 8; i++) {
     if(curproc->sharedmem.sharedseg[i].key == -1) {
       lookup = i;
@@ -225,22 +208,15 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
   GLOBAL_BOOK.shmid_ds[shmid].shm_lpid = curproc->pid;
 
   for(int i = 0; i < noofpages; i++) {
-    cprintf("%d\n", i);
-
     if (mappages(curproc->pgdir, vir, PGSIZE, (uint)GLOBAL_BOOK.shmid_ds[shmid].v2p[i], perm) < 0) {
-      cprintf("mappages failed !");
       deallocuvm(curproc->pgdir, (uint)vir, (uint) vir + GLOBAL_BOOK.shmid_ds[shmid].shm_segsz);
       release(&GLOBAL_BOOK.lock);
-      cprintf("error in 219 \n");
       return (void*)-1;
     }
     vir = vir + PGSIZE;
   }
   curproc->sharedmem.next_virtual = vir;
-  //cprintf("vir to attchh = %x\n", vir);
   release(&GLOBAL_BOOK.lock);
-  cprintf("no error in 230 \n");
-
   return curproc->sharedmem.sharedseg[lookup].viraddr;
 }
 
@@ -250,10 +226,9 @@ shmdt(const void *shmaddr) {
   struct proc *curproc = myproc();
   int shmid = -1, lookup = -1;
   void *vir, *vir2, *phy;
-  pde_t *pte;  
+  pde_t *pte;
 
   if(curproc->sharedmem.noofshmreg <= 0) {
-    cprintf("line no 256");
     return -1;
   }
   for(int i = 0; i < MAX_REGIONS_PER_PROC; i++) {
@@ -264,15 +239,11 @@ shmdt(const void *shmaddr) {
     }
   }
   if(shmid == -1) {
-    cprintf("line no 267");
-
     return -1;
   }
   vir = curproc->sharedmem.sharedseg[lookup].viraddr;
   vir2 = vir;
   if(vir == 0) {
-    cprintf("line no 274");
-
     return -1;
   }
   acquire(&GLOBAL_BOOK.lock);
@@ -281,17 +252,13 @@ shmdt(const void *shmaddr) {
   for (int i = 0; i < GLOBAL_BOOK.shmid_ds[shmid].no_of_pages; i++) {
 
     if((pte = walkpgdir(curproc->pgdir, vir2, 0)) == 0) {
-
       release(&GLOBAL_BOOK.lock);
-      cprintf("line no 286");
-
       return -1;
     }
     *pte = 0;
     vir2 = vir2 + PGSIZE;
   }
   curproc->sharedmem.next_virtual = (void*)((int)curproc->sharedmem.next_virtual - PGSIZE * curproc->sharedmem.sharedseg[lookup].noofpages);
-
   curproc->sharedmem.noofshmreg--;
   curproc->sharedmem.sharedseg[lookup].key = -1;
   curproc->sharedmem.sharedseg[lookup].noofpages = 0;
@@ -301,11 +268,10 @@ shmdt(const void *shmaddr) {
   GLOBAL_BOOK.shmid_ds[shmid].shm_lpid = curproc->pid;
 
   if(GLOBAL_BOOK.shmid_ds[shmid].shm_nattch <= 0 && GLOBAL_BOOK.shmid_ds[shmid].isdelete == 1) {
- 
+
     for (int i = 0; i < GLOBAL_BOOK.shmid_ds[shmid].no_of_pages; i++) {
       phy = GLOBAL_BOOK.shmid_ds[shmid].v2p[i];
       GLOBAL_BOOK.shmid_ds[shmid].v2p[i] = (void*)0;
-      cprintf("line no 303\n");
       kfree((char*)P2V(phy));
     }
 
@@ -350,7 +316,7 @@ shmctl(int shmid, int cmd, struct shmid_ds *buf) {
       buf->shm_perm.__key = GLOBAL_BOOK.shmid_ds[shmid].shm_perm.__key;
       for (int i = 0; i < MAX_PAGES; i++) {
         buf->v2p[i] = GLOBAL_BOOK.shmid_ds[shmid].v2p[i];
-      } 
+      }
     }
   } else if (cmd == IPC_INFO) {
     buf->shminfo.shmall = GLOBAL_BOOK.shmid_ds[shmid].shminfo.shmall;

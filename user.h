@@ -25,9 +25,8 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-int shmget(key__t key, size__t size, int shmflg);
+int shmget(int key, size__t size, int shmflg);
 void *shmat(int shmid, void *shmaddr, int shmflg);
-// void *shmat(int shmid, int shmaddr, int shmflg);
 int shmdt(void *shmaddr);
 int shmctl(int shmid, int cmd, void*);
 
