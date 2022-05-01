@@ -152,19 +152,17 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
   int perm = 0, lookup = 0, noofpages = GLOBAL_BOOK.shmid_ds[shmid].no_of_pages;
   void* vir; 
 
-  cprintf("running well in 153 \n");
-
-
   if(shmid < 0 || shmid > MAX_REGIONS) {
-    cprintf("error in 158 \n");
     return (void*)-1;
   }
-  // if( (int)shmaddr > (int)KERNBASE || (int)shmaddr < (int)HEAPLIMIT ) {
-  //   cprintf("error in 162 \n");
-  //   cprintf("%x\n", shmaddr);
+  if(shmaddr != 0) {
+    if( (int)shmaddr > (int)KERNBASE || (int)shmaddr < (int)HEAPLIMIT ) {
+      cprintf("error in 162 \n");
+      cprintf("%x\n", shmaddr);
 
-  //   return (void*) -1;
-  // }
+      return (void*) -1;
+    }
+  }
 
   acquire(&GLOBAL_BOOK.lock);
   struct proc *curproc = myproc();
@@ -178,7 +176,6 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
       if (shmflg == 0)
         if(GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode == SHM_RW)
           return (char*)curproc->sharedmem.sharedseg[i].viraddr;
-      cprintf("error in 165 \n");
       return (void*)-1;
     }
   }
@@ -188,7 +185,6 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
       perm = PTE_W | PTE_U;
     else {
       release(&GLOBAL_BOOK.lock);
-      cprintf("error in 177 \n");
       return (void*)-1;
     }
   }else if (shmflg == SHM_RDONLY) {
@@ -197,7 +193,6 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
       perm = PTE_U;
     else {
       release(&GLOBAL_BOOK.lock);
-      cprintf("error in 186 \n");
       return (void*)-1;
     }
   }
@@ -244,7 +239,7 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
   curproc->sharedmem.next_virtual = vir;
   //cprintf("vir to attchh = %x\n", vir);
   release(&GLOBAL_BOOK.lock);
-  cprintf("error in 230 \n");
+  cprintf("no error in 230 \n");
 
   return curproc->sharedmem.sharedseg[lookup].viraddr;
 }
@@ -258,6 +253,7 @@ shmdt(const void *shmaddr) {
   pde_t *pte;  
 
   if(curproc->sharedmem.noofshmreg <= 0) {
+    cprintf("line no 256");
     return -1;
   }
   for(int i = 0; i < MAX_REGIONS_PER_PROC; i++) {
@@ -268,11 +264,15 @@ shmdt(const void *shmaddr) {
     }
   }
   if(shmid == -1) {
+    cprintf("line no 267");
+
     return -1;
   }
   vir = curproc->sharedmem.sharedseg[lookup].viraddr;
   vir2 = vir;
   if(vir == 0) {
+    cprintf("line no 274");
+
     return -1;
   }
   acquire(&GLOBAL_BOOK.lock);
@@ -283,11 +283,15 @@ shmdt(const void *shmaddr) {
     if((pte = walkpgdir(curproc->pgdir, vir2, 0)) == 0) {
 
       release(&GLOBAL_BOOK.lock);
+      cprintf("line no 286");
+
       return -1;
     }
     *pte = 0;
     vir2 = vir2 + PGSIZE;
   }
+  curproc->sharedmem.next_virtual = (void*)((int)curproc->sharedmem.next_virtual - PGSIZE * curproc->sharedmem.sharedseg[lookup].noofpages);
+
   curproc->sharedmem.noofshmreg--;
   curproc->sharedmem.sharedseg[lookup].key = -1;
   curproc->sharedmem.sharedseg[lookup].noofpages = 0;

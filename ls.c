@@ -45,12 +45,15 @@ ls(char *path)
 
   id = shmget(6448, 1024, IPC_CREAT | IPC_EXCL | 0400);
   printf(2, "id is = %d\n", id);
-  //a = shmat(id, (const void*)70040000, SHM_RDONLY);
   a = shmat(id, 0, SHM_RDONLY);
+  //a = shmat(id, 0, SHM_RDONLY);
   printf(2, "address is = %x\n", a);
 
   id = shmdt((void *)a);
   printf(2, "id is = %d\n", id);
+  a = shmat(id, 0, SHM_RDONLY);
+  //a = shmat(id, 0, SHM_RDONLY);
+  printf(2, "address is = %x\n", a);
 
 
   if((fd = open(path, 0)) < 0){
