@@ -42,6 +42,7 @@ initsharedmemory(void) {
     GLOBAL_BOOK.shmid_ds[i].shm_lpid = -1;
     GLOBAL_BOOK.shmid_ds[i].shm_nattch = 0;
     GLOBAL_BOOK.shmid_ds[i].no_of_pages = 0;
+    GLOBAL_BOOK.shmid_ds[i].isdelete = 0;
     initshminfo(i);
     for(int j = 0; j < MAX_PAGES; j++) {
       GLOBAL_BOOK.shmid_ds[i].v2p[j] = (void*)0;
@@ -155,10 +156,15 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
 
 
   if(shmid < 0 || shmid > MAX_REGIONS) {
-    release(&GLOBAL_BOOK.lock);
     cprintf("error in 158 \n");
     return (void*)-1;
   }
+  // if( (int)shmaddr > (int)KERNBASE || (int)shmaddr < (int)HEAPLIMIT ) {
+  //   cprintf("error in 162 \n");
+  //   cprintf("%x\n", shmaddr);
+
+  //   return (void*) -1;
+  // }
 
   acquire(&GLOBAL_BOOK.lock);
   struct proc *curproc = myproc();
@@ -197,7 +203,7 @@ shmat(int shmid, const void *shmaddr, int shmflg) {
   }
   if(shmaddr == (void*)0)
     vir = curproc->sharedmem.next_virtual;
-  else
+  else 
     vir = (void*)shmaddr;
 
   // for(int i = 0; i < 8; i++) {
@@ -274,8 +280,11 @@ shmdt(const void *shmaddr) {
 
   for (int i = 0; i < GLOBAL_BOOK.shmid_ds[shmid].no_of_pages; i++) {
 
-    if((pte = walkpgdir(curproc->pgdir, vir2, 0)) == 0)
+    if((pte = walkpgdir(curproc->pgdir, vir2, 0)) == 0) {
+
+      release(&GLOBAL_BOOK.lock);
       return -1;
+    }
     *pte = 0;
     vir2 = vir2 + PGSIZE;
   }
@@ -287,12 +296,13 @@ shmdt(const void *shmaddr) {
   curproc->sharedmem.sharedseg[lookup].viraddr = (void*)0;
   GLOBAL_BOOK.shmid_ds[shmid].shm_lpid = curproc->pid;
 
-  if(GLOBAL_BOOK.shmid_ds[shmid].shm_nattch <= 0) {
-
+  if(GLOBAL_BOOK.shmid_ds[shmid].shm_nattch <= 0 && GLOBAL_BOOK.shmid_ds[shmid].isdelete == 1) {
+ 
     for (int i = 0; i < GLOBAL_BOOK.shmid_ds[shmid].no_of_pages; i++) {
       phy = GLOBAL_BOOK.shmid_ds[shmid].v2p[i];
       GLOBAL_BOOK.shmid_ds[shmid].v2p[i] = (void*)0;
-      kfree(P2V(phy));
+      cprintf("line no 303\n");
+      kfree((char*)P2V(phy));
     }
 
     GLOBAL_BOOK.shmid_ds[shmid].no_of_pages = 0;
@@ -348,11 +358,14 @@ shmctl(int shmid, int cmd, struct shmid_ds *buf) {
   } else if (cmd == IPC_SET) {
     if(buf->shm_perm.mode == SHM_R || buf->shm_perm.mode == SHM_RW) {
       GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode = buf->shm_perm.mode;
-
     }
+  } else if (cmd == IPC_RMID) {
+
+    GLOBAL_BOOK.shmid_ds[shmid].isdelete = 1;
+  } else {
+    release(&GLOBAL_BOOK.lock);
+    return -1;
   }
-
-
   release(&GLOBAL_BOOK.lock);
   return 0;
 }

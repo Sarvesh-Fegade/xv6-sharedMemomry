@@ -26,10 +26,10 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int shmget(key__t key, size__t size, int shmflg);
-//void *shmat(int shmid, const void *shmaddr, int shmflg);
-void *shmat(int shmid, int shmaddr, int shmflg);
-int shmdt(const void *shmaddr);
-//int shmctl(int shmid, );
+void *shmat(int shmid, void *shmaddr, int shmflg);
+// void *shmat(int shmid, int shmaddr, int shmflg);
+int shmdt(void *shmaddr);
+int shmctl(int shmid, int cmd, void*);
 
 // ulib.c
 int stat(const char*, struct stat*);

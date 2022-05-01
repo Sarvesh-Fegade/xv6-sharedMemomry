@@ -31,7 +31,7 @@ ls(char *path)
   struct dirent de;
   struct stat st;
 
-  // void *a;
+  void *a;
   int id;
   // id = shmget(123, 5024, IPC_CREAT | IPC_EXCL | 0400);
   // printf(2, "id is = %d\n", id);
@@ -43,13 +43,13 @@ ls(char *path)
   // a = shmat(id, 0, 0);
   // printf(2, "address is = %x\n", a);
 
-  // id = shmget(6448, 1024, IPC_CREAT | IPC_EXCL | 0400);
-  // printf(2, "id is = %d\n", id);
-  // //a = shmat(id, (const void*)70040000, SHM_RDONLY);
-  // a = shmat(id, 70040000, SHM_RDONLY);
-  // printf(2, "address is = %x\n", a);
+  id = shmget(6448, 1024, IPC_CREAT | IPC_EXCL | 0400);
+  printf(2, "id is = %d\n", id);
+  //a = shmat(id, (const void*)70040000, SHM_RDONLY);
+  a = shmat(id, 0, SHM_RDONLY);
+  printf(2, "address is = %x\n", a);
 
-  id = shmdt((const void *)70000000);
+  id = shmdt((void *)a);
   printf(2, "id is = %d\n", id);
 
 

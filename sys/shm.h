@@ -45,6 +45,7 @@ struct shmid_ds {
     int shm_lpid;
     int shm_nattch;
     int no_of_pages;
+    int isdelete;
     void* v2p[MAX_PAGES];
 };
 
