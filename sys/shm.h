@@ -37,8 +37,6 @@ struct ipc_perm {
 struct shmid_ds {
     struct ipc_perm shm_perm;
     struct shminfo shminfo;
-    // unsigned int __key;
-    // unsigned int mode;
     int shmid;
     int shm_segsz;
     int shm_cpid;
