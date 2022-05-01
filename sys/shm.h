@@ -16,6 +16,11 @@
 #define IPC_NOWAIT 00004000   /* return error on wait */
 #define IPC_PRIVATE 0
 
+#define IPC_RMID 0     /* remove resource */
+#define IPC_SET  1     /* set ipc_perm options */
+#define IPC_STAT 2     /* get ipc_perm options */
+#define IPC_INFO 3     /* see ipcs */
+
 struct	shminfo {
 	int shmmax;     /* Maximum segment size */
 	int shmmin;     /* Minimum segment size; always 1 */
@@ -31,7 +36,7 @@ struct ipc_perm {
 
 struct shmid_ds {
     struct ipc_perm shm_perm;
-    //struct shminfo shminfo;
+    struct shminfo shminfo;
     // unsigned int __key;
     // unsigned int mode;
     int shmid;

@@ -9,6 +9,7 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
+struct shmid_ds;
 
 // bio.c
 void            binit(void);
@@ -187,13 +188,14 @@ void            switchkvm(void);
 int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
 int             mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm);
-pte_t*          walkpgdir(pde_t *pgdir, const void *va, int alloc);
+pde_t*          walkpgdir(pde_t *pgdir, const void *va, int alloc);
 
 // shm.c
 int             shmget(unsigned int, unsigned int, int);
 void*           shmat(int shmid, const void *shmaddr, int shmflg);
 int             shmdt(const void *shmaddr);
-void            initshminfo(void);
+int             shmctl(int shmid, int cmd, struct shmid_ds *buf);
+void            initshminfo(int i);
 void            initsharedmemory(void);
 int             keylookup(unsigned int key, int flag, int perm);
 int             pagealloc(int shmid, int noofpages);

@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
+#include "sys/shm.h"
 
 int
 sys_fork(void)
@@ -142,11 +143,18 @@ sys_shmdt(void) {
     return -1;
   }
 
-
   return shmdt((const void*)shmaddr);
 }
 
 int
 sys_shmctl(void) {
-  return 0;
+
+  int shmid, cmd;
+  struct shmid_ds *ptr;
+
+  if(argint(0, &shmid) < 0 || argint(1, &cmd) < 0 || argptr(2, (void*)&ptr, sizeof(*ptr)) < 0) {
+    return -1;
+  }
+
+  return shmctl(shmid, cmd, ptr);
 }

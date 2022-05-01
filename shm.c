@@ -17,13 +17,13 @@ struct {
 struct shminfo shminfo;
 
 void
-initshminfo() {
+initshminfo(int i) {
 
-  shminfo.shmmax = MAX_PAGES * PGSIZE;
-  shminfo.shmmin = 1;
-  shminfo.shmmni = MAX_REGIONS;
-  shminfo.shmseg = MAX_REGIONS_PER_PROC;
-  shminfo.shmall = 64000;
+  GLOBAL_BOOK.shmid_ds[i].shminfo.shmmax = MAX_PAGES * PGSIZE;
+  GLOBAL_BOOK.shmid_ds[i].shminfo.shmmin = 1;
+  GLOBAL_BOOK.shmid_ds[i].shminfo.shmmni = MAX_REGIONS;
+  GLOBAL_BOOK.shmid_ds[i].shminfo.shmseg = MAX_REGIONS_PER_PROC;
+  GLOBAL_BOOK.shmid_ds[i].shminfo.shmall = 64000;
 }
 
 void
@@ -32,7 +32,7 @@ initsharedmemory(void) {
   initlock(&GLOBAL_BOOK.lock, "SHM");
   acquire(&GLOBAL_BOOK.lock);
 
-  initshminfo();
+  // initshminfo();
   for (int i = 0; i < MAX_REGIONS; i++) {
     GLOBAL_BOOK.shmid_ds[i].shm_perm.__key = -1;
     GLOBAL_BOOK.shmid_ds[i].shm_perm.mode = 0;
@@ -42,6 +42,7 @@ initsharedmemory(void) {
     GLOBAL_BOOK.shmid_ds[i].shm_lpid = -1;
     GLOBAL_BOOK.shmid_ds[i].shm_nattch = 0;
     GLOBAL_BOOK.shmid_ds[i].no_of_pages = 0;
+    initshminfo(i);
     for(int j = 0; j < MAX_PAGES; j++) {
       GLOBAL_BOOK.shmid_ds[i].v2p[j] = (void*)0;
     }
@@ -248,7 +249,7 @@ shmdt(const void *shmaddr) {
   struct proc *curproc = myproc();
   int shmid = -1, lookup = -1;
   void *vir, *vir2, *phy;
-  pte_t *pte;  
+  pde_t *pte;  
 
   if(curproc->sharedmem.noofshmreg <= 0) {
     return -1;
@@ -303,8 +304,55 @@ shmdt(const void *shmaddr) {
     GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode = -1;
     GLOBAL_BOOK.shmid_ds[shmid].shm_perm.__key = -1;
   }
+  release(&GLOBAL_BOOK.lock);
+  return 0;
+}
+
+int
+shmctl(int shmid, int cmd, struct shmid_ds *buf) {
+
+  acquire(&GLOBAL_BOOK.lock);
+  if(shmid < 0 || shmid > MAX_REGIONS) {
+    release(&GLOBAL_BOOK.lock);
+    return -1;
+  }
+  if(GLOBAL_BOOK.shmid_ds[shmid].shm_perm.__key == -1) {
+    release(&GLOBAL_BOOK.lock);
+    return -1;
+  }
+  if(buf == 0) {
+    release(&GLOBAL_BOOK.lock);
+    return -1;
+  }
+  if (cmd == IPC_STAT) {
+    if(GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode == SHM_R || GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode == SHM_RW) {
+      buf->no_of_pages = GLOBAL_BOOK.shmid_ds[shmid].no_of_pages;
+      buf->shm_cpid = GLOBAL_BOOK.shmid_ds[shmid].shm_cpid;
+      buf->shm_lpid = GLOBAL_BOOK.shmid_ds[shmid].shm_lpid;
+      buf->shm_nattch = GLOBAL_BOOK.shmid_ds[shmid].shm_nattch;
+      buf->shm_segsz = GLOBAL_BOOK.shmid_ds[shmid].shm_segsz;
+      buf->shmid = GLOBAL_BOOK.shmid_ds[shmid].shmid;
+      buf->shm_perm.mode = GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode;
+      buf->shm_perm.__key = GLOBAL_BOOK.shmid_ds[shmid].shm_perm.__key;
+      for (int i = 0; i < MAX_PAGES; i++) {
+        buf->v2p[i] = GLOBAL_BOOK.shmid_ds[shmid].v2p[i];
+      } 
+    }
+  } else if (cmd == IPC_INFO) {
+    buf->shminfo.shmall = GLOBAL_BOOK.shmid_ds[shmid].shminfo.shmall;
+    buf->shminfo.shmmax = GLOBAL_BOOK.shmid_ds[shmid].shminfo.shmmax;
+    buf->shminfo.shmmin = GLOBAL_BOOK.shmid_ds[shmid].shminfo.shmmin;
+    buf->shminfo.shmmni = GLOBAL_BOOK.shmid_ds[shmid].shminfo.shmmni;
+    buf->shminfo.shmseg = GLOBAL_BOOK.shmid_ds[shmid].shminfo.shmseg;
+
+  } else if (cmd == IPC_SET) {
+    if(buf->shm_perm.mode == SHM_R || buf->shm_perm.mode == SHM_RW) {
+      GLOBAL_BOOK.shmid_ds[shmid].shm_perm.mode = buf->shm_perm.mode;
+
+    }
+  }
+
 
   release(&GLOBAL_BOOK.lock);
   return 0;
-
 }
