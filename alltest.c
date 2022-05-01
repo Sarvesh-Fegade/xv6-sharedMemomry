@@ -156,7 +156,7 @@ int main() {
         printf(1, "Test: shmctl with IPC_SET -> Pass \n");
     else
         printf(1, "Test: shmctl with IPC_SET -> Fail \n");
-    
+
     ctl = shmctl(id3, IPC_RMID, &buf2);
     if(ctl == 0)
         printf(1, "Test: shmctl with IPC_RMID -> Pass \n");
